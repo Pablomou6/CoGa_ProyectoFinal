@@ -10,6 +10,7 @@
 
 #include "lecturaShader_0_9.h"
 #include "esfera.h"
+#include <vector>
 
 //Declaramos algunas constantes
 #define TRIANGULOS GL_TRIANGLES
@@ -137,10 +138,9 @@ Estructura SueloIluminacion(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec
 Estructura SueloTexturas(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.6f, .6f, .6f));
 Estructura SueloColisiones(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.7f, .7f, .7f));
 
-Estructura ParedIntroModelado = Estructura(.0f, 0.0f, .0f, 0.0f, 0.0f, 33.3f, 5.0f, 1.0f, 0, glm::vec3(0.5f, 0.5f, 0.5f));
-Estructura ParedModeladoTransform = Estructura(.0f, 0.0f, .0f, 0.0f, 0.0f, 33.3f, 5.0f, 1.0f, 0, glm::vec3(0.5f, 0.5f, 0.5f));
-Estructura ParedTransformIluminacion = Estructura(0.0f, 0.0f, -50.0f, 0.0f, 0.0f, 1.0f, 5.0f, 33.3f, 0, glm::vec3(0.5f, 0.5f, 0.5f));
-Estructura ParedIluminacionTexturas = Estructura(16.65f, 0.0f, -33.3f, 0.0f, 0.0f, 1.0f, 5.0f, 33.3f, 0, glm::vec3(0.5f, 0.5f, 0.5f));
+Estructura ParedXYTotal(0, 0, 0, 0.0f, 0.0f, 99.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura ParedXY(.0f, 0.0f, .0f, 0.0f, 0.0f, 33.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura ParedYZ(.0f, 0.0f, .0f, 0.0f, 0.0f, 1.0f, 12.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
 
 
 //Función para preparar el VAO del cuadrado en el plano XZ
@@ -177,35 +177,61 @@ void CuadradoXZ(unsigned int* VAOSuelo) {
 	glBindVertexArray(0);
 }
 
-void ParedVAO(unsigned int* VAOPared) {
+// Función para preparar el VAO de un cuadrado en el plano XY (ideal para paredes)
+void CuadradoXY(unsigned int* VAOPared) {
 	unsigned int VBO;
 
-	// Vértices de una pared (rectángulo vertical en el eje YZ)
 	float vertices[] = {
-		//     Posición          Color
-		-0.5f, 0.0f,  0.0f,     0.5f, 0.5f, 0.5f,  // Inferior izquierda
-		 0.5f, 0.0f,  0.0f,     0.5f, 0.5f, 0.5f,  // Inferior derecha
-		 0.5f, 5.0f,  0.0f,     0.5f, 0.5f, 0.5f,  // Superior derecha
-		-0.5f, 5.0f,  0.0f,     0.5f, 0.5f, 0.5f,  // Superior izquierda
-	};
+		//     Posición         Color
+		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
 
-	unsigned int indices[] = {
-		0, 1, 2,  // Triángulo inferior
-		2, 3, 0   // Triángulo superior
+		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f
 	};
 
 	glGenVertexArrays(1, VAOPared);
 	glGenBuffers(1, &VBO);
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
-
 	glBindVertexArray(*VAOPared);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// Posición
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+// Función para preparar el VAO de un cuadrado en el plano YZ (ideal para paredes)
+void CuadradoYZ(unsigned int* VAOPared) {
+	unsigned int VBO;
+
+	float vertices[] = {
+		//     Posición             Color
+		 0.0f, -0.5f, -0.5f,       0.0f, 1.0f, 0.0f,
+		 0.0f, -0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
+		 0.0f,  0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
+
+		 0.0f, -0.5f, -0.5f,       0.0f, 1.0f, 0.0f,
+		 0.0f,  0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
+		 0.0f,  0.5f, -0.5f,       0.0f, 1.0f, 0.0f
+	};
+
+	glGenVertexArrays(1, VAOPared);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(*VAOPared);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Posición
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
@@ -329,55 +355,89 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	camFront = glm::normalize(front);
 }
 
-void dibujarSuelos(unsigned int transformLoc, unsigned int colorLoc) {
-	//Dibujamos el Suelo del pasillo con las transformaciones necesarias
-	SueloPasillo.transform = glm::mat4(1.0f);
-	SueloPasillo.transform = glm::translate(SueloPasillo.transform, glm::vec3(0.0f, 0.0f, 0.0f)); // Mantener en el centro
-	SueloPasillo.transform = glm::scale(SueloPasillo.transform, glm::vec3(SueloPasillo.sx, SueloPasillo.sy, SueloPasillo.sz));
-	SueloPasillo.dibujarObjeto(transformLoc, SueloPasillo.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de la intro con las transformaciones necesarias
-	SueloIntro.transform = glm::mat4(1.0f);
-	SueloIntro.transform = glm::translate(SueloIntro.transform, glm::vec3(-33.f, 0.0f, 33.3f));
-	SueloIntro.transform = glm::scale(SueloIntro.transform, glm::vec3(SueloIntro.sx, SueloIntro.sy, SueloIntro.sz));
-	SueloIntro.dibujarObjeto(transformLoc, SueloIntro.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de los modelados con las transformaciones necesarias
-	SueloModelado.transform = glm::mat4(1.0f);
-	SueloModelado.transform = glm::translate(SueloModelado.transform, glm::vec3(-33.f, 0.0f, 0.0f));
-	SueloModelado.transform = glm::scale(SueloModelado.transform, glm::vec3(SueloModelado.sx, SueloModelado.sy, SueloModelado.sz));
-	SueloModelado.dibujarObjeto(transformLoc, SueloModelado.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de las transformaciones con las transformaciones necesarias
-	SueloTransformaciones.transform = glm::mat4(1.0f);
-	SueloTransformaciones.transform = glm::translate(SueloTransformaciones.transform, glm::vec3(-33.f, 0.0f, -33.3f));
-	SueloTransformaciones.transform = glm::scale(SueloTransformaciones.transform, glm::vec3(SueloTransformaciones.sx, SueloTransformaciones.sy, SueloTransformaciones.sz));
-	SueloTransformaciones.dibujarObjeto(transformLoc, SueloTransformaciones.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de la cámara con las transformaciones necesarias
-	SueloCamara.transform = glm::mat4(1.0f);
-	SueloCamara.transform = glm::translate(SueloCamara.transform, glm::vec3(0.0f, 0.0f, -66.6f));
-	SueloCamara.transform = glm::scale(SueloCamara.transform, glm::vec3(SueloCamara.sx, SueloCamara.sy, SueloCamara.sz));
-	SueloCamara.dibujarObjeto(transformLoc, SueloCamara.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de la iluminación con las transformaciones necesarias
-	SueloIluminacion.transform = glm::mat4(1.0f);
-	SueloIluminacion.transform = glm::translate(SueloIluminacion.transform, glm::vec3(33.f, 0.0f, -33.3f));
-	SueloIluminacion.transform = glm::scale(SueloIluminacion.transform, glm::vec3(SueloIluminacion.sx, SueloIluminacion.sy, SueloIluminacion.sz));
-	SueloIluminacion.dibujarObjeto(transformLoc, SueloIluminacion.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de las texturas con las transformaciones necesarias
-	SueloTexturas.transform = glm::mat4(1.0f);
-	SueloTexturas.transform = glm::translate(SueloTexturas.transform, glm::vec3(33.f, 0.0f, 0.0f));
-	SueloTexturas.transform = glm::scale(SueloTexturas.transform, glm::vec3(SueloTexturas.sx, SueloTexturas.sy, SueloTexturas.sz));
-	SueloTexturas.dibujarObjeto(transformLoc, SueloTexturas.transform, colorLoc, TRIANGULOS, 6);
-
-	//Dibujamos el Suelo de las colisiones con las transformaciones necesarias
-	SueloColisiones.transform = glm::mat4(1.0f);
-	SueloColisiones.transform = glm::translate(SueloColisiones.transform, glm::vec3(33.f, 0.0f, 33.3f));
-	SueloColisiones.transform = glm::scale(SueloColisiones.transform, glm::vec3(SueloColisiones.sx, SueloColisiones.sy, SueloColisiones.sz));
-	SueloColisiones.dibujarObjeto(transformLoc, SueloColisiones.transform, colorLoc, TRIANGULOS, 6);
+// Función auxiliar para dibujar un suelo individual
+void dibujarSuelo(Estructura& suelo, glm::vec3 posicion, unsigned int transformLoc, unsigned int colorLoc) {
+	glm::mat4 transform = glm::mat4(1.0f);
+	transform = glm::translate(transform, posicion);
+	transform = glm::scale(transform, glm::vec3(suelo.sx, suelo.sy, suelo.sz));
+	suelo.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
 }
+
+// Función principal para dibujar todos los suelos
+void dibujarSuelos(unsigned int transformLoc, unsigned int colorLoc) {
+	// Definimos los suelos y sus posiciones en un vector de pares
+	struct InfoSuelo {
+		Estructura& suelo;
+		glm::vec3 posicion;
+	};
+
+	std::vector<InfoSuelo> suelos = {
+		{SueloPasillo, glm::vec3(0.0f, 0.0f, 0.0f)},
+		{SueloIntro, glm::vec3(-33.f, 0.0f, 33.3f)},
+		{SueloModelado, glm::vec3(-33.f, 0.0f, 0.0f)},
+		{SueloTransformaciones, glm::vec3(-33.f, 0.0f, -33.3f)},
+		{SueloCamara, glm::vec3(0.0f, 0.0f, -66.6f)},
+		{SueloIluminacion, glm::vec3(33.f, 0.0f, -33.3f)},
+		{SueloTexturas, glm::vec3(33.f, 0.0f, 0.0f)},
+		{SueloColisiones, glm::vec3(33.f, 0.0f, 33.3f)}
+	};
+
+	// Dibujamos cada suelo con su posición correspondiente
+	for (const auto& info : suelos) {
+		dibujarSuelo(info.suelo, info.posicion, transformLoc, colorLoc);
+	}
+}
+
+
+
+void dibujarPared(glm::vec3 posicion, Estructura& pared, unsigned int transformLoc, unsigned int colorLoc) {
+	glm::mat4 transform = glm::mat4(1.0f);
+	transform = glm::translate(transform, posicion);
+	transform = glm::scale(transform, glm::vec3(pared.sx, pared.sy, pared.sz));
+	pared.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
+	// Giramos 180 grados y volvemos a dibujar
+	transform = glm::rotate(transform, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	pared.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
+}
+
+void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc) {
+	// ParedXYTotal (centro)
+	dibujarPared(glm::vec3(0.0f, ParedXYTotal.sy / 2, (SueloIntro.sz / 2) + 33.3f), ParedXYTotal, transformLoc, colorLoc);
+
+	// Coordenadas de ParedXY alrededor del suelo
+	float zBase = SueloIntro.sz / 2;
+	std::vector<glm::vec3> posicionesXY = {
+		{-33.f, ParedXY.sy / 2, zBase},
+		{-33.f, ParedXY.sy / 2, -zBase},
+		{-33.f, ParedXY.sy / 2, -zBase - 33.3f},
+		{0.f,   ParedXY.sy / 2, -SueloIntro.sz * 2.5f},
+		{+33.f, ParedXY.sy / 2, zBase},
+		{+33.f, ParedXY.sy / 2, -zBase},
+		{+33.f, ParedXY.sy / 2, -zBase - 33.3f}
+	};
+	for (const auto& pos : posicionesXY) {
+		dibujarPared(pos, ParedXY, transformLoc, colorLoc);
+	}
+
+    // ParedYZ (laterales)  
+    std::vector<glm::vec3> posicionesYZ = {  
+		{-(SueloPasillo.sx / 2) - 33.15f, ParedYZ.sy / 2, SueloIntro.sz},  
+		{-(SueloPasillo.sx / 2) - 33.15f, ParedYZ.sy / 2, 0.0f},  
+		{-(SueloPasillo.sx / 2) - 33.15f, ParedYZ.sy / 2, -SueloTransformaciones.sz},  
+		{-(SueloPasillo.sx / 2), ParedYZ.sy / 2, -(SueloCamara.sz * 2)},  
+		{+(SueloPasillo.sx / 2), ParedYZ.sy / 2, -(SueloCamara.sz * 2)},  
+		{+(SueloPasillo.sx / 2) + 33.15f, ParedYZ.sy / 2, SueloIntro.sz},  
+		{+(SueloPasillo.sx / 2) + 33.15f, ParedYZ.sy / 2, 0.0f},  
+		{+(SueloPasillo.sx / 2) + 33.15f, ParedYZ.sy / 2, -SueloTransformaciones.sz}  
+    };  
+    for (const auto& pos : posicionesYZ) {  
+					dibujarPared(pos, ParedYZ, transformLoc, colorLoc);  
+    }
+	for (const auto& pos : posicionesYZ) {
+		dibujarPared(pos, ParedYZ, transformLoc, colorLoc);
+	}
+}
+
 
 void Display() {
 	//Usamos el shader
@@ -395,6 +455,9 @@ void Display() {
 	
 	//Dibujamos el suelo
 	dibujarSuelos(transformLoc, colorLoc);
+
+	//Dibujamos las paredes
+	dibujarParedes(transformLoc, colorLoc);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
@@ -441,8 +504,13 @@ int main() {
 	CuadradoXZ(&VAOSuelo);
 	SueloPasillo.VAO = SueloIntro.VAO = SueloModelado.VAO = SueloTransformaciones.VAO = SueloCamara.VAO = SueloIluminacion.VAO = SueloTexturas.VAO = SueloColisiones.VAO = VAOSuelo;
 
-	ParedVAO(&VAOPared);
-	ParedIntroModelado.VAO = ParedModeladoTransform.VAO = ParedTransformIluminacion.VAO = ParedIluminacionTexturas.VAO = VAOPared;
+	CuadradoXY(&VAOPared);
+	ParedXY.VAO = ParedXYTotal.VAO = VAOPared;
+
+	CuadradoYZ(&VAOPared);
+	ParedYZ.VAO = VAOPared;
+
+	
 
 	//Lazo de la ventana mientras no la cierre
 	while (!glfwWindowShouldClose(window)) {
