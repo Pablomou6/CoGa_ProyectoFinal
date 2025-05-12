@@ -11,9 +11,11 @@
 #include "lecturaShader_0_9.h"
 #include "esfera.h"
 #include <vector>
+#include <random>
 
 //Declaramos algunas constantes
 #define TRIANGULOS GL_TRIANGLES
+#define sphereVertexCount 1080
 int SCR_WIDTH = 800;	//Declara el ancho de la ventana
 int SCR_HEIGHT = 800;	//Declara la altura de la ventana
 
@@ -54,8 +56,6 @@ class Estructura {
 public:
 	//Atributos públicos de los objetos
 	float px, py, pz;        // posición inicial
-	float angulo_trans;      // ángulo de giro
-	float velocidad;         // velocidad de movimiento
 	float sx, sy, sz;        // escalado
 	unsigned int VAO;        // Vertex Array Object
 	int texture;             // textura del objeto
@@ -68,8 +68,6 @@ public:
 		px = 0;
 		py = 0;
 		pz = 0;
-		angulo_trans = 0;
-		velocidad = 0;
 		sx = 1;
 		sy = 1;
 		sz = 1;
@@ -80,14 +78,11 @@ public:
 	}
 
 	//Constructor con parámetros. En caso de no recibir textura, se le asigna 0, pero permite cargarla
-	Estructura(float px, float py, float pz, float angulo_trans, float velocidad,
-		float sx, float sy, float sz, unsigned int VAO, glm::vec3 color = glm::vec3(1.0f),
+	Estructura(float px, float py, float pz, float sx, float sy, float sz, unsigned int VAO, glm::vec3 color = glm::vec3(1.0f),
 		GLuint texture = 0) {
 		this->px = px;
 		this->py = py;
 		this->pz = pz;
-		this->angulo_trans = angulo_trans;
-		this->velocidad = velocidad;
 		this->sx = sx;
 		this->sy = sy;
 		this->sz = sz;
@@ -129,31 +124,31 @@ public:
 
 //////CREACIÓN DEL ENTORNO///////
 //Declaramos los suelos de forma global
-Estructura SueloPasillo(0, 0, 0, 0.0f, 0.0f, 33.0f, 1.0f, 100.0f, 0, glm::vec3(1, 1, 1));
+Estructura SueloPasillo(0, 0, 0, 33.0f, 1.0f, 100.0f, 0, glm::vec3(1, 1, 1));
 
-Estructura SueloIntro(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.1f, .1f, .1f));
-Estructura SueloModelado(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.2f, .2f, .2f));
-Estructura SueloTransformaciones(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.3f, .3f, .3f));
+Estructura SueloIntro(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.1f, .1f, .1f));
+Estructura SueloModelado(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.2f, .2f, .2f));
+Estructura SueloTransformaciones(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.3f, .3f, .3f));
 
-Estructura SueloCamara(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.4f, .4f, .4f));
+Estructura SueloCamara(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.4f, .4f, .4f));
 
-Estructura SueloIluminacion(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.5f, .5f, .5f));
-Estructura SueloTexturas(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.6f, .6f, .6f));
-Estructura SueloColisiones(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.7f, .7f, .7f));
+Estructura SueloIluminacion(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.5f, .5f, .5f));
+Estructura SueloTexturas(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.6f, .6f, .6f));
+Estructura SueloColisiones(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.7f, .7f, .7f));
 
-Estructura ParedXYTotal(0, 0, 0, 0.0f, 0.0f, 99.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
-Estructura ParedXY(.0f, 0.0f, .0f, 0.0f, 0.0f, 33.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
-Estructura ParedYZ(.0f, 0.0f, .0f, 0.0f, 0.0f, 1.0f, 12.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura ParedXYTotal(0, 0, 0, 99.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura ParedXY(.0f, 0.0f, .0f, 33.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura ParedYZ(.0f, 0.0f, .0f, 1.0f, 12.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
 
 ////TRIANGULO PARA LA HABITACIÓN INTRO//////
-Estructura TrianguloIntro(
-	0.0f, 1.0f, -5.0f, //Posición x, y, z
-	0.0f, 0.0f,        //Ángulo, velocidad
-	7.0f, 7.0f, 7.0f,  //Escalado en x, y, z
-	0,                //VAO
-	glm::vec3(1.0f, 1.0f, 1.0f) //Color base (no se usa si los vértices tienen color)
-);
+Estructura TrianguloIntro(0.0f, 0.0f, 0.0f, 7.0f, 7.0f, 7.0f, 0, glm::vec3(1.0f, 1.0f, 1.0f));
 
+////ESFERA PARA LA HABITACIÓN DEL MODELADO////
+Estructura  EsferaModelado(0, 0, 0, 4.0, 4.0, 4.0, 0, glm::vec3(0.0, 0.0, 0.0));
+
+
+//////CUBO PARA LA HABITACIÓN DE LAS TRANSFORMACIONES//////
+Estructura CuboTransformaciones(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1.0));
 
 //Función para preparar el VAO del cuadrado en el plano XZ
 void CuadradoXZ(unsigned int* VAOSuelo) {
@@ -286,6 +281,118 @@ void Triangulo(unsigned int* VAO) {
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+}
+
+void Esfera(unsigned int* VAO) {
+	unsigned int VBO;
+	//set up vertex data (and buffer(s)) and configure vertex attributes
+
+	glGenVertexArrays(1, VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(*VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(sphereAxis), sphereAxis, GL_STATIC_DRAW);
+
+	// Normales
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+
+	// texture
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// vertices
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glDeleteBuffers(1, &VBO);
+}
+
+void Cubo(unsigned int* VAO) {
+	unsigned int VBO, EBO;
+
+	float vertices[] = {
+		-.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 0.0f,
+		.5f, -0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
+		.5f, 0.5f, .5f,      1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 1.0f,
+		.5f, 0.5f, .5f,      1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 1.0f,
+		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 1.0f,
+		-.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 0.0f,
+
+
+		-.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 0.0f,
+		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 0.0f,
+		0.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 1.0f,
+		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 1.0f,
+		-.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 1.0f,
+		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 0.0f,
+
+
+		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f,   1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
+		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
+		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
+		-.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+
+
+		.5f, 0.5f, -.5f,     1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+		0.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 0.0f,
+		0.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
+		0.5f, -.5f, 0.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
+		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
+		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+
+
+		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 0.0f,
+		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 0.0f,
+		0.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 1.0f,
+		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 1.0f,
+		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 1.0f,
+		-.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 0.0f,
+
+
+		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 0.0f,
+		0.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 0.0f,
+		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 1.0f,
+		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 1.0f,
+		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
+		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 0.0f,
+	};
+
+	glGenVertexArrays(1, VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(*VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Atributos Posicion
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Atributo Color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// Atributo normal
+	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	//glEnableVertexAttribArray(2);
+
+
+	// Coordenadas de textura
+	//glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	//glEnableVertexAttribArray(3);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glDeleteBuffers(1, &VBO);
 }
 
 
@@ -483,6 +590,72 @@ void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc) {
 }
 
 
+// Dibuja la esfera en la habitación de modelado, usando como base SueloModelado
+void dibujarEsfera(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	// Posición relativa de la esfera respecto al centro del suelo
+	glm::vec3 posicionRelativa(0.0f, +5.0f, 0.0f);
+
+	// Calcula la transformación: parte de la matriz de posición del suelo
+	EsferaModelado.transform = glm::translate(SueloModelado.posicion, posicionRelativa);
+	EsferaModelado.transform = glm::scale(EsferaModelado.transform, glm::vec3(EsferaModelado.sx, EsferaModelado.sy, EsferaModelado.sz));
+
+	// Dibuja la esfera (usa color uniforme, no color por vértice)
+	glUniform1i(useVertexColorLoc, false);
+	EsferaModelado.dibujarObjeto(transformLoc, EsferaModelado.transform, colorLoc, GL_TRIANGLES, sphereVertexCount); // sphereVertexCount: número de vértices de la esfera
+}
+
+
+// Función para dibujar y mover el cubo aleatoriamente dentro de la habitación de transformaciones
+void dibujarCubo(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	// Límites de la habitación de transformaciones
+	float minX = -SueloTransformaciones.sx / 2.0f + CuboTransformaciones.sx / 2.0f;
+	float maxX = SueloTransformaciones.sx / 2.0f - CuboTransformaciones.sx / 2.0f;
+	float minZ = -SueloTransformaciones.sz / 2.0f + CuboTransformaciones.sz / 2.0f;
+	float maxZ = SueloTransformaciones.sz / 2.0f - CuboTransformaciones.sz / 2.0f;
+	float minY = 0.0f + CuboTransformaciones.sy / 2.0f;
+	float maxY = ParedXY.sy - CuboTransformaciones.sy / 2.0f;
+
+	// Variables estáticas para la posición y dirección del cubo
+	static glm::vec3 pos = glm::vec3(0.0f, minY, 0.0f);
+	static glm::vec3 dir = glm::normalize(glm::vec3(0.5f, 0.2f, 0.3f));
+	static std::mt19937 rng(std::random_device{}());
+	static std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+	// Velocidad del cubo
+	float velocidad = 0.2f;
+
+	// Actualiza la posición
+	pos += dir * velocidad;
+
+	// Comprueba los límites y rebota o cambia dirección aleatoriamente
+	bool rebote = false;
+	if (pos.x < minX) { pos.x = minX; dir.x = -dir.x; rebote = true; }
+	if (pos.x > maxX) { pos.x = maxX; dir.x = -dir.x; rebote = true; }
+	if (pos.z < minZ) { pos.z = minZ; dir.z = -dir.z; rebote = true; }
+	if (pos.z > maxZ) { pos.z = maxZ; dir.z = -dir.z; rebote = true; }
+	if (pos.y < minY) { pos.y = minY; dir.y = -dir.y; rebote = true; }
+	if (pos.y > maxY) { pos.y = maxY; dir.y = -dir.y; rebote = true; }
+
+	// Si rebota, cambia ligeramente la dirección aleatoriamente
+	if (rebote) {
+		dir.x += dist(rng) * 0.2f;
+		dir.y += dist(rng) * 0.2f;
+		dir.z += dist(rng) * 0.2f;
+		dir = glm::normalize(dir);
+	}
+
+	// Calcula la transformación del cubo
+	CuboTransformaciones.transform = glm::translate(SueloTransformaciones.posicion, glm::vec3(pos.x, pos.y, pos.z));
+	CuboTransformaciones.transform = glm::rotate(CuboTransformaciones.transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	CuboTransformaciones.transform = glm::scale(CuboTransformaciones.transform, glm::vec3(CuboTransformaciones.sx, CuboTransformaciones.sy, CuboTransformaciones.sz));
+
+	// Dibuja el cubo usando color por vértice
+	glUniform1i(useVertexColorLoc, true);
+	CuboTransformaciones.dibujarObjeto(transformLoc, CuboTransformaciones.transform, colorLoc, GL_TRIANGLES, 36);
+	glUniform1i(useVertexColorLoc, false);
+}
+
+
 void Display() {
 	//Usamos el shader
 	glUseProgram(shaderProgram);
@@ -513,12 +686,18 @@ void Display() {
 	//Desactivamos el uso del color del VAO
 	glUniform1i(useVertexColorLoc, false); 
 
+	//Dibujamos la esfera
+	dibujarEsfera(transformLoc, colorLoc, useVertexColorLoc);
+
+	//Dibujamos el cubo
+	dibujarCubo(transformLoc, colorLoc, useVertexColorLoc);
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main() {
 	//Devlaramos las variables
-	unsigned int VAOSuelo, VAOPared, VAOTriangulo;
+	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo;
 
 	//Inicializamos GLFW
 	glfwInit();
@@ -567,6 +746,11 @@ int main() {
 	Triangulo(&VAOTriangulo);
 	TrianguloIntro.VAO = VAOTriangulo;
 
+	Esfera(&VAOEsfera);
+	EsferaModelado.VAO = VAOEsfera;
+
+	Cubo(&VAOCubo);
+	CuboTransformaciones.VAO = VAOCubo;
 	
 
 	//Lazo de la ventana mientras no la cierre
