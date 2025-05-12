@@ -1,15 +1,55 @@
 #version 330 core
-in vec3 vertexColor; // Color recibido del shader de vértices
+in vec3 vertexColor;
+in vec3 fragNormal;
+in vec3 fragPos;
 
 out vec4 FragColor;
 
-uniform vec3 ourColor; // Color uniforme
-uniform bool useVertexColor; // Interruptor para usar el color del VAO
+uniform vec3 ourColor;
+uniform bool useVertexColor;
+uniform bool useLighting;
+
+// Luz direccional
+uniform vec3 lightDir;
+uniform vec3 lightColor;
+
+// Luz puntual encima de la esfera de iluminación
+uniform bool luzIluminacionActiva;
+uniform vec3 luzIluminacionPos;
+uniform vec3 viewPos;
 
 void main() {
-    if (useVertexColor) {
-        FragColor = vec4(vertexColor, 1.0); // Usar el color del VAO
-    } else {
-        FragColor = vec4(ourColor, 1.0); // Usar el color uniforme
+    vec3 baseColor = useVertexColor ? vertexColor : ourColor;
+    vec3 normal = normalize(fragNormal);
+    vec3 result = baseColor;
+
+    if (useLighting) {
+        // Luz direccional
+        vec3 lightDirection = normalize(-lightDir);
+        float diff = max(dot(normal, lightDirection), 0.0);
+        vec3 diffuse = diff * lightColor;
+        vec3 ambient = 0.2 * lightColor;
+        result = (ambient + diffuse) * baseColor;
     }
+
+    // Luz puntual encima de la esfera de iluminación (solo si está activa)
+    if (luzIluminacionActiva) {
+        vec3 lightPos = luzIluminacionPos;
+        vec3 lightDirPuntual = normalize(lightPos - fragPos);
+        float diffPuntual = max(dot(normal, lightDirPuntual), 0.0);
+
+        // Atenuación por distancia
+        float distance = length(lightPos - fragPos);
+        float attenuation = 1.0 / (1.0 + 0.02 * distance + 0.01 * (distance * distance));
+
+        vec3 colorLuz = vec3(1.0, 1.0, 0.8); // Luz cálida
+        vec3 diffusePuntual = diffPuntual * colorLuz * attenuation * 2;
+        vec3 ambientPuntual = 0.2 * colorLuz * attenuation * 2;
+
+        // Suma la luz puntual a lo que ya había
+        result += (ambientPuntual + diffusePuntual) * baseColor;
+    }
+
+    FragColor = vec4(result, 1.0);
 }
+

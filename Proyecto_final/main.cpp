@@ -34,7 +34,7 @@ GLuint shaderProgram;
 * 		    v+Z
 */
 
-//Declaramos variables globales para la cámara
+//Declaramos variables globales para la cámara y su movimiento con el ratón
 glm::vec3 camPos = glm::vec3(.0f, 5.0f, 33.0f); // Posición inicial de la cámara  
 glm::vec3 camFront = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f)); // Dirección hacia +Z
 glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f); // Vector hacia arriba
@@ -50,6 +50,19 @@ float sensitivity = 0.05f;
 bool isFullscreen = false;
 bool pWasPressed = false;
 int windowedX, windowedY, windowedWidth, windowedHeight;
+
+//Estas variables son para controlar la cámara del cubo y almacenar los valores de la cámara del ratón
+int camaraCuboActiva = 0;
+glm::vec3 camPosLibre = camPos;
+glm::vec3 camFrontLibre = camFront;
+glm::vec3 camUpLibre = camUp;
+float yawLibre = yaw;
+float pitchLibre = pitch;
+bool camaraBloqueada = false;
+
+//Variables globales para controlar la luz
+bool luzIluminacionActiva = false;
+bool tecla7Presionada = false;
 
 //Declaramos la clase con la que crearemos los diferentes suelos
 class Estructura {
@@ -149,6 +162,12 @@ Estructura  EsferaModelado(0, 0, 0, 4.0, 4.0, 4.0, 0, glm::vec3(0.0, 0.0, 0.0));
 
 //////CUBO PARA LA HABITACIÓN DE LAS TRANSFORMACIONES//////
 Estructura CuboTransformaciones(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1.0));
+
+/////CUBO PARA LA HABITACIÓN DE LA CÁMARA//////
+Estructura CuboCamara(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1.0));
+
+/////ESFERA PARA LA HABITACIÓN DE LA ILUMINACIÓN//////
+Estructura  EsferaIluminacion(0, 0, 0, 2.5, 2.5, 2.5, 0, glm::vec3(0.0, 0.0, 0.0));
 
 //Función para preparar el VAO del cuadrado en el plano XZ
 void CuadradoXZ(unsigned int* VAOSuelo) {
@@ -316,52 +335,53 @@ void Cubo(unsigned int* VAO) {
 	unsigned int VBO, EBO;
 
 	float vertices[] = {
-		-.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 0.0f,
-		.5f, -0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
-		.5f, 0.5f, .5f,      1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 1.0f,
-		.5f, 0.5f, .5f,      1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	1.0f, 1.0f,
-		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 1.0f,
-		-.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, 1.0f,	0.0f, 0.0f,
+		// Cara +Z (azul)
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,
 
+		// Cara -Z (rojo)
+		-0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
 
-		-.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 0.0f,
-		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 0.0f,
-		0.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 1.0f,
-		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	1.0f, 1.0f,
-		-.5f, -0.5f, -.5f,   1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 1.0f,
-		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 0.0f, -1.0f,	0.0f, 0.0f,
+		// Cara -X (verde)
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,   0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f,
 
+		// Cara +X (amarillo)
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,   1.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,   1.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,   1.0f, 1.0f, 0.0f,
 
-		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f,   1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
-		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
-		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
-		-.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //-1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+		 // Cara +Y (magenta)
+		 -0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,
+		  0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,
+		  0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 1.0f,
+		  0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,
 
-
-		.5f, 0.5f, -.5f,     1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-		0.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 0.0f,
-		0.5f, -0.5f, .5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
-		0.5f, -.5f, 0.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
-		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
-		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-
-
-		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 0.0f,
-		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 0.0f,
-		0.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 1.0f,
-		0.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	1.0f, 1.0f,
-		-.5f, -.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 1.0f,
-		-.5f, -.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, -1.0f, 0.0f,	0.0f, 0.0f,
-
-
-		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 0.0f,
-		0.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 0.0f,
-		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 1.0f,
-		0.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	1.0f, 1.0f,
-		-.5f, 0.5f, -.5f,    1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
-		-.5f, 0.5f, .5f,     1.0, 0.0, 0.0,    //0.0f, 1.0f, 0.0f,	0.0f, 0.0f,
+		 // Cara -Y (cyan)
+		 -0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,
+		  0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 1.0f,
+		  0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,
+		  0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 1.0f,
+		 -0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,
+		 -0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 1.0f,
 	};
 
 	glGenVertexArrays(1, VAO);
@@ -417,67 +437,96 @@ void window_size_callback(GLFWwindow* ventana, int nuevoAncho, int nuevoAlto) {
 	glViewport(0, 0, nuevoAncho, nuevoAlto);
 }
 
-//Función para el control del programa
-void processInput(GLFWwindow* window) {
-	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+//Función que sitúa las diferentes cámaras
+void setCamaraCubo(int cara) {
+	if (cara == 0) {
+		camaraCuboActiva = 0;
+		camaraBloqueada = false;
+		camPos = camPosLibre;
+		camFront = camFrontLibre;
+		camUp = camUpLibre;
+		yaw = yawLibre;
+		pitch = pitchLibre;
+		return;
+	}
 
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		// ESC para cerrar la ventana
-		glfwSetWindowShouldClose(window, true);
+	if (!camaraBloqueada) {
+		camPosLibre = camPos;
+		camFrontLibre = camFront;
+		camUpLibre = camUp;
+		yawLibre = yaw;
+		pitchLibre = pitch;
 	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camPos += cameraSpeed * camFront; // Mover hacia adelante en la dirección de camFront
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camPos -= cameraSpeed * camFront; // Mover hacia atrás en la dirección de camFront
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camPos -= glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed; // Mover hacia la izquierda
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camPos += glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed; // Mover hacia la derecha
-	camPos.y = 5.0f;
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-		if (!pWasPressed) {
-			isFullscreen = !isFullscreen;
 
-			// Guardar posición y tamaño actuales si se va a fullscreen
-			if (isFullscreen) {
-				glfwGetWindowPos(window, &windowedX, &windowedY);
-				glfwGetWindowSize(window, &windowedWidth, &windowedHeight);
-				glfwSetWindowMonitor(window, monitor, 0, 0,
-					mode->width, mode->height,
-					mode->refreshRate);
-			}
-			else {
-				glfwSetWindowMonitor(window, nullptr,
-					windowedX, windowedY,
-					windowedWidth, windowedHeight,
-					0);
-			}
-		}
-		pWasPressed = true;
+	camaraCuboActiva = cara;
+	camaraBloqueada = true;
+
+	// Posición relativa del cubo sobre el suelo
+	glm::vec3 posicionRelativa(0.0f, ParedXY.sy / 2, 0.0f);
+
+	// Centro del cubo en coordenadas globales
+	glm::vec3 centro = glm::vec3(SueloCamara.posicion * glm::vec4(posicionRelativa, 1.0f));
+
+	float distancia = 8.0f;
+
+	switch (cara) {
+	case 1: // +X
+		camPos = centro + glm::vec3(distancia, 0.0f, 0.0f);
+		camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+		break;
+	case 2: // -X
+		camPos = centro + glm::vec3(-distancia, 0.0f, 0.0f);
+		camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+		break;
+	case 3: // +Y
+		camPos = centro + glm::vec3(0.0f, distancia, 0.0f);
+		camUp = glm::vec3(0.0f, 0.0f, -1.0f);
+		break;
+	case 4: // -Y
+		camPos = centro + glm::vec3(0.0f, -distancia, 0.0f);
+		camUp = glm::vec3(0.0f, 0.0f, 1.0f);
+		break;
+	case 5: // +Z
+		camPos = centro + glm::vec3(0.0f, 0.0f, distancia);
+		camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+		break;
+	case 6: // -Z
+		camPos = centro + glm::vec3(0.0f, 0.0f, -distancia);
+		camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+		break;
+	default:
+		return;
 	}
-	else {
-		pWasPressed = false;
-	}
+
+	camFront = glm::normalize(centro - camPos);
 }
+
 
 
 //Función que configura la cámara
 void myCamara() {
-	// Matriz de proyección
 	glm::mat4 projection = glm::perspective(glm::radians(fovCamara),
 		(float)SCR_WIDTH / (float)SCR_HEIGHT,
 		0.1f, 200.0f);
 	unsigned int proyectionLoc = glGetUniformLocation(shaderProgram, "projection");
 	glUniformMatrix4fv(proyectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// Matriz de vista con cámara libre
-	glm::mat4 view = glm::lookAt(camPos, camPos + camFront, camUp);
+	glm::mat4 view;
+	if (camaraCuboActiva == 0) {
+		// Cámara libre
+		view = glm::lookAt(camPos, camPos + camFront, camUp);
+	}
+	else {
+		// Cámara fija (camPos y camFront ya han sido ajustados)
+		view = glm::lookAt(camPos, camPos + camFront, camUp);
+	}
 	unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+	if (camaraBloqueada) return; // No hacer nada si la cámara está fija
+
 	if (firstMouse) {
 		lastX = xpos;
 		lastY = ypos;
@@ -589,6 +638,16 @@ void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc) {
 	}
 }
 
+//Función que dibuja el triángulo de la introducción
+void dibujarTrianguloIntro(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	glUniform1i(useVertexColorLoc, true); // Activamos el uso del color del VAO
+	TrianguloIntro.transform = glm::translate(SueloIntro.posicion, glm::vec3(TrianguloIntro.px, TrianguloIntro.py + 5, TrianguloIntro.pz));
+	TrianguloIntro.transform = glm::rotate(TrianguloIntro.transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	TrianguloIntro.transform = glm::scale(TrianguloIntro.transform, glm::vec3(TrianguloIntro.sx, TrianguloIntro.sy, TrianguloIntro.sz));
+	TrianguloIntro.dibujarObjeto(transformLoc, TrianguloIntro.transform, colorLoc, GL_TRIANGLES, 3);
+	glUniform1i(useVertexColorLoc, false); // Desactivamos el uso del color del VAO
+}
+
 
 // Dibuja la esfera en la habitación de modelado, usando como base SueloModelado
 void dibujarEsfera(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
@@ -655,6 +714,92 @@ void dibujarCubo(unsigned int transformLoc, unsigned int colorLoc, unsigned int 
 	glUniform1i(useVertexColorLoc, false);
 }
 
+void dibujarCuboCamara(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	// El cubo se sitúa en el centro del suelo, apoyado sobre él
+	glm::vec3 posicionRelativa(0.0f, ParedXY.sy/2, 0.0f);
+
+	CuboCamara.transform = glm::translate(SueloCamara.posicion, posicionRelativa);
+	CuboCamara.transform = glm::scale(CuboCamara.transform, glm::vec3(CuboCamara.sx, CuboCamara.sy, CuboCamara.sz));
+
+	glUniform1i(useVertexColorLoc, true);
+	CuboCamara.dibujarObjeto(transformLoc, CuboCamara.transform, colorLoc, GL_TRIANGLES, 36);
+	glUniform1i(useVertexColorLoc, false);
+}
+
+void dibujarEsferaIluminacion(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	// Posición relativa de la esfera respecto al centro del suelo
+	glm::vec3 posicionRelativa(0.0f, ParedXY.sy / 2, 0.0f);
+
+	EsferaIluminacion.transform = glm::translate(SueloIluminacion.posicion, posicionRelativa);
+	EsferaIluminacion.transform = glm::scale(EsferaIluminacion.transform, glm::vec3(EsferaIluminacion.sx, EsferaIluminacion.sy, EsferaIluminacion.sz));
+
+	glUniform1i(useVertexColorLoc, false);
+	EsferaIluminacion.dibujarObjeto(transformLoc, EsferaIluminacion.transform, colorLoc, GL_TRIANGLES, sphereVertexCount);
+}
+
+//Función para el control del programa
+void processInput(GLFWwindow* window) {
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+	// Solo permite mover la cámara si está libre
+	if (!camaraBloqueada) {
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, true);
+		}
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			camPos += cameraSpeed * camFront;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			camPos -= cameraSpeed * camFront;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			camPos -= glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			camPos += glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed;
+		camPos.y = 5.0f;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+		if (!pWasPressed) {
+			isFullscreen = !isFullscreen;
+			if (isFullscreen) {
+				glfwGetWindowPos(window, &windowedX, &windowedY);
+				glfwGetWindowSize(window, &windowedWidth, &windowedHeight);
+				glfwSetWindowMonitor(window, monitor, 0, 0,
+					mode->width, mode->height,
+					mode->refreshRate);
+			}
+			else {
+				glfwSetWindowMonitor(window, nullptr,
+					windowedX, windowedY,
+					windowedWidth, windowedHeight,
+					0);
+			}
+		}
+		pWasPressed = true;
+	}
+	else {
+		pWasPressed = false;
+	}
+
+	// Selección de cámara (esto siempre debe funcionar)
+	if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) setCamaraCubo(0);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) setCamaraCubo(1);
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) setCamaraCubo(2);
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) setCamaraCubo(3);
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) setCamaraCubo(4);
+	if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) setCamaraCubo(5);
+	if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) setCamaraCubo(6);
+	if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
+		if (!tecla7Presionada) {
+			luzIluminacionActiva = !luzIluminacionActiva;
+			tecla7Presionada = true;
+		}
+	}
+	else {
+		tecla7Presionada = false;
+	}
+}
+
 
 void Display() {
 	//Usamos el shader
@@ -663,6 +808,8 @@ void Display() {
 	unsigned int transformLoc = glGetUniformLocation(shaderProgram, "model");
 	unsigned int colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
 	unsigned int useVertexColorLoc = glGetUniformLocation(shaderProgram, "useVertexColor");
+	signed int luzActivaLoc = glGetUniformLocation(shaderProgram, "luzIluminacionActiva");
+	unsigned int luzPosLoc = glGetUniformLocation(shaderProgram, "luzIluminacionPos");
 
 	//Limpiamos el buffer de color y el de profundidad
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -678,13 +825,7 @@ void Display() {
 	dibujarParedes(transformLoc, colorLoc);
 
 	//Dibujamos el triángulo de la parte INTRO
-	glUniform1i(useVertexColorLoc, true); //Activamos que queremos usar el color del VAO
-    TrianguloIntro.transform = glm::translate(SueloIntro.posicion, glm::vec3(TrianguloIntro.px, TrianguloIntro.py + 5, TrianguloIntro.pz + 5));  
-    TrianguloIntro.transform = glm::rotate(TrianguloIntro.transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));  
-    TrianguloIntro.transform = glm::scale(TrianguloIntro.transform, glm::vec3(TrianguloIntro.sx, TrianguloIntro.sy, TrianguloIntro.sz));  
-    TrianguloIntro.dibujarObjeto(transformLoc, TrianguloIntro.transform, colorLoc, GL_TRIANGLES, 3);
-	//Desactivamos el uso del color del VAO
-	glUniform1i(useVertexColorLoc, false); 
+	dibujarTrianguloIntro(transformLoc, colorLoc, useVertexColorLoc);
 
 	//Dibujamos la esfera
 	dibujarEsfera(transformLoc, colorLoc, useVertexColorLoc);
@@ -692,12 +833,24 @@ void Display() {
 	//Dibujamos el cubo
 	dibujarCubo(transformLoc, colorLoc, useVertexColorLoc);
 
+	//Dibujamos el cubo de la cámara
+	dibujarCuboCamara(transformLoc, colorLoc, useVertexColorLoc);
+
+	// Posición de la luz: justo encima de la esfera
+	glUniform1i(glGetUniformLocation(shaderProgram, "luzIluminacionActiva"), luzIluminacionActiva ? 1 : 0);
+	glm::vec3 luzPos = glm::vec3(SueloIluminacion.posicion * glm::vec4(0, 0, 0, 1)) + glm::vec3(0.0f, EsferaIluminacion.sy + 4.0f, 0.0f);
+	glUniform3fv(glGetUniformLocation(shaderProgram, "luzIluminacionPos"), 1, glm::value_ptr(luzPos));
+	glUniform3fv(glGetUniformLocation(shaderProgram, "viewPos"), 1, glm::value_ptr(camPos));
+
+	// Dibuja la esfera de iluminación
+	dibujarEsferaIluminacion(transformLoc, colorLoc, useVertexColorLoc);
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main() {
 	//Devlaramos las variables
-	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo;
+	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo, VAOCuboCamara, VAOEsferaLuces;
 
 	//Inicializamos GLFW
 	glfwInit();
@@ -751,6 +904,12 @@ int main() {
 
 	Cubo(&VAOCubo);
 	CuboTransformaciones.VAO = VAOCubo;
+
+	Cubo(&VAOCuboCamara);
+	CuboCamara.VAO = VAOCuboCamara;
+
+	Esfera(&VAOEsferaLuces);
+	EsferaIluminacion.VAO = VAOEsferaLuces;
 	
 
 	//Lazo de la ventana mientras no la cierre
