@@ -61,6 +61,7 @@ public:
 	int texture;             // textura del objeto
 	glm::mat4 transform;     // matriz de transformación
 	glm::vec3 color;         // color del objeto
+	glm::mat4 posicion; // matriz de posición
 
 	//Constructor por defecto
 	Estructura() {
@@ -94,6 +95,7 @@ public:
 		this->color = color;
 		this->texture = texture;
 		this->transform = glm::mat4(1.0f);
+		this->posicion = glm::mat4(1.0f);
 	}
 
 	//Método que devuelve la matriz de transformación
@@ -125,6 +127,7 @@ public:
 	}
 };
 
+//////CREACIÓN DEL ENTORNO///////
 //Declaramos los suelos de forma global
 Estructura SueloPasillo(0, 0, 0, 0.0f, 0.0f, 33.0f, 1.0f, 100.0f, 0, glm::vec3(1, 1, 1));
 
@@ -141,6 +144,15 @@ Estructura SueloColisiones(0, 0, 0, 0.0f, 0.0f, 33.3f, 1.0f, 33.3f, 0, glm::vec3
 Estructura ParedXYTotal(0, 0, 0, 0.0f, 0.0f, 99.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
 Estructura ParedXY(.0f, 0.0f, .0f, 0.0f, 0.0f, 33.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
 Estructura ParedYZ(.0f, 0.0f, .0f, 0.0f, 0.0f, 1.0f, 12.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
+
+////TRIANGULO PARA LA HABITACIÓN INTRO//////
+Estructura TrianguloIntro(
+	0.0f, 1.0f, -5.0f, //Posición x, y, z
+	0.0f, 0.0f,        //Ángulo, velocidad
+	7.0f, 7.0f, 7.0f,  //Escalado en x, y, z
+	0,                //VAO
+	glm::vec3(1.0f, 1.0f, 1.0f) //Color base (no se usa si los vértices tienen color)
+);
 
 
 //Función para preparar el VAO del cuadrado en el plano XZ
@@ -238,6 +250,37 @@ void CuadradoYZ(unsigned int* VAOPared) {
 	glEnableVertexAttribArray(0);
 
 	// Color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+//Función para dibujar el triángulo de la parte INTRO (necesito un VAO para hacerlo objeto de la clase y moverlo en el espacio)
+void Triangulo(unsigned int* VAO) {
+	unsigned int VBO;
+
+	float vertices[] = {
+		// Posiciones         // Colores
+		 0.0f,  0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice superior (rojo)
+		-0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice inferior izquierdo (verde)
+		 0.5f, -0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice inferior derecho (azul)
+	};
+
+	glGenVertexArrays(1, VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(*VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Atributo posición
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Atributo color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
@@ -359,6 +402,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 void dibujarSuelo(Estructura& suelo, glm::vec3 posicion, unsigned int transformLoc, unsigned int colorLoc) {
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(transform, posicion);
+	suelo.posicion = transform;
 	transform = glm::scale(transform, glm::vec3(suelo.sx, suelo.sy, suelo.sz));
 	suelo.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
 }
@@ -445,6 +489,7 @@ void Display() {
 	//Buscamos en el shader la matriz de transformación y el color.
 	unsigned int transformLoc = glGetUniformLocation(shaderProgram, "model");
 	unsigned int colorLoc = glGetUniformLocation(shaderProgram, "ourColor");
+	unsigned int useVertexColorLoc = glGetUniformLocation(shaderProgram, "useVertexColor");
 
 	//Limpiamos el buffer de color y el de profundidad
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -459,12 +504,21 @@ void Display() {
 	//Dibujamos las paredes
 	dibujarParedes(transformLoc, colorLoc);
 
+	//Dibujamos el triángulo de la parte INTRO
+	glUniform1i(useVertexColorLoc, true); //Activamos que queremos usar el color del VAO
+    TrianguloIntro.transform = glm::translate(SueloIntro.posicion, glm::vec3(TrianguloIntro.px, TrianguloIntro.py + 5, TrianguloIntro.pz + 5));  
+    TrianguloIntro.transform = glm::rotate(TrianguloIntro.transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));  
+    TrianguloIntro.transform = glm::scale(TrianguloIntro.transform, glm::vec3(TrianguloIntro.sx, TrianguloIntro.sy, TrianguloIntro.sz));  
+    TrianguloIntro.dibujarObjeto(transformLoc, TrianguloIntro.transform, colorLoc, GL_TRIANGLES, 3);
+	//Desactivamos el uso del color del VAO
+	glUniform1i(useVertexColorLoc, false); 
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main() {
 	//Devlaramos las variables
-	unsigned int VAOSuelo, VAOPared;
+	unsigned int VAOSuelo, VAOPared, VAOTriangulo;
 
 	//Inicializamos GLFW
 	glfwInit();
@@ -509,6 +563,9 @@ int main() {
 
 	CuadradoYZ(&VAOPared);
 	ParedYZ.VAO = VAOPared;
+
+	Triangulo(&VAOTriangulo);
+	TrianguloIntro.VAO = VAOTriangulo;
 
 	
 
