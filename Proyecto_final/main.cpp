@@ -167,7 +167,11 @@ Estructura CuboTransformaciones(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1
 Estructura CuboCamara(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1.0));
 
 /////ESFERA PARA LA HABITACIÓN DE LA ILUMINACIÓN//////
-Estructura  EsferaIluminacion(0, 0, 0, 2.5, 2.5, 2.5, 0, glm::vec3(0.0, 0.0, 0.0));
+Estructura  EsferaIluminacion(0, 0, 0, 1, 1, 1, 0, glm::vec3(.7f, 0.7f, 0.7f));
+Estructura CuboIluminacion(0, 0, 0, .75f, 1.50f, .75f, 0, glm::vec3(.2f, .2f, .2f));
+
+/////ESFERA PARA LA HABITACIÓN DE LAS TEXTURAS//////
+Estructura  EsferaTexturas(0, 0, 0, 10, 8, 10, 0, glm::vec3(.7f, 0.7f, 0.7f));
 
 //Función para preparar el VAO del cuadrado en el plano XZ
 void CuadradoXZ(unsigned int* VAOSuelo) {
@@ -737,6 +741,28 @@ void dibujarEsferaIluminacion(unsigned int transformLoc, unsigned int colorLoc, 
 	EsferaIluminacion.dibujarObjeto(transformLoc, EsferaIluminacion.transform, colorLoc, GL_TRIANGLES, sphereVertexCount);
 }
 
+void dibujarCuboIluminacion(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	//El cubo se sitúa inicialmente junto a la esfera
+	glm::vec3 posicionRelativa(0.0f, ParedXY.sy/2-0.75, 0.0f);
+
+	CuboIluminacion.transform = glm::translate(SueloIluminacion.posicion, posicionRelativa);
+	CuboIluminacion.transform = glm::scale(CuboIluminacion.transform, glm::vec3(CuboIluminacion.sx, CuboIluminacion.sy, CuboIluminacion.sz));
+
+	glUniform1i(useVertexColorLoc, false);
+	CuboIluminacion.dibujarObjeto(transformLoc, CuboIluminacion.transform, colorLoc, GL_TRIANGLES, 36);
+}
+
+void dibujarEsferaTexturas(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
+	//Posición relativa de la esfera respecto al centro del suelo
+	glm::vec3 posicionRelativa(0.0f, 0.0f, 0.0f);
+
+	EsferaTexturas.transform = glm::translate(SueloTexturas.posicion, posicionRelativa);
+	EsferaTexturas.transform = glm::scale(EsferaTexturas.transform, glm::vec3(EsferaTexturas.sx, EsferaTexturas.sy, EsferaTexturas.sz));
+
+	glUniform1i(useVertexColorLoc, false);
+	EsferaTexturas.dibujarObjeto(transformLoc, EsferaTexturas.transform, colorLoc, GL_TRIANGLES, sphereVertexCount);
+}
+
 //Función para el control del programa
 void processInput(GLFWwindow* window) {
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -811,6 +837,7 @@ void Display() {
 	signed int luzActivaLoc = glGetUniformLocation(shaderProgram, "luzIluminacionActiva");
 	unsigned int luzPosLoc = glGetUniformLocation(shaderProgram, "luzIluminacionPos");
 
+
 	//Limpiamos el buffer de color y el de profundidad
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -838,19 +865,25 @@ void Display() {
 
 	// Posición de la luz: justo encima de la esfera
 	glUniform1i(glGetUniformLocation(shaderProgram, "luzIluminacionActiva"), luzIluminacionActiva ? 1 : 0);
-	glm::vec3 luzPos = glm::vec3(SueloIluminacion.posicion * glm::vec4(0, 0, 0, 1)) + glm::vec3(0.0f, EsferaIluminacion.sy + 4.0f, 0.0f);
+	glm::vec3 luzPos = glm::vec3(SueloIluminacion.posicion * glm::vec4(0, 0, 0, 1)) + glm::vec3(0.0f, ParedXY.sy/2 + 3, 0.0f);
 	glUniform3fv(glGetUniformLocation(shaderProgram, "luzIluminacionPos"), 1, glm::value_ptr(luzPos));
 	glUniform3fv(glGetUniformLocation(shaderProgram, "viewPos"), 1, glm::value_ptr(camPos));
 
 	// Dibuja la esfera de iluminación
 	dibujarEsferaIluminacion(transformLoc, colorLoc, useVertexColorLoc);
+	// Dibuja el cubo de iluminación
+	dibujarCuboIluminacion(transformLoc, colorLoc, useVertexColorLoc);
+
+	// Dibuja la esfera de texturas
+	dibujarEsferaTexturas(transformLoc, colorLoc, useVertexColorLoc);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main() {
 	//Devlaramos las variables
-	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo, VAOCuboCamara, VAOEsferaLuces;
+	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo, VAOCuboCamara, VAOEsferaLuces, VAOCuboLuces, 
+		VAOEsferaTexturas;
 
 	//Inicializamos GLFW
 	glfwInit();
@@ -910,6 +943,11 @@ int main() {
 
 	Esfera(&VAOEsferaLuces);
 	EsferaIluminacion.VAO = VAOEsferaLuces;
+	Cubo(&VAOCuboLuces);
+	CuboIluminacion.VAO = VAOCuboLuces;
+
+	Esfera(&VAOEsferaTexturas);
+	EsferaTexturas.VAO = VAOEsferaTexturas;
 	
 
 	//Lazo de la ventana mientras no la cierre
