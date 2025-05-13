@@ -12,6 +12,8 @@
 #include "esfera.h"
 #include <vector>
 #include <random>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 //Declaramos algunas constantes
 #define TRIANGULOS GL_TRIANGLES
@@ -118,11 +120,11 @@ public:
 		glUniform3fv(colorLoc, 1, glm::value_ptr(color));
 
 		//Configurar las texturas
-		/*if (texture != 0) {
+		if (texture != 0) {
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, texture);
 			glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
-		}*/
+		}
 
 		//Dibujar el objeto
 		glBindVertexArray(VAO);
@@ -130,8 +132,8 @@ public:
 		glBindVertexArray(0);
 
 		//Restaurar configuración de texturas
-		/*glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);*/
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 };
 
@@ -149,9 +151,15 @@ Estructura SueloIluminacion(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.5f, .5f, 
 Estructura SueloTexturas(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.6f, .6f, .6f));
 Estructura SueloColisiones(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.7f, .7f, .7f));
 
+
+//Declaramos las paredes de forma global
 Estructura ParedXYTotal(0, 0, 0, 99.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
 Estructura ParedXY(.0f, 0.0f, .0f, 33.3f, 12.0f, 1.0f, 0, glm::vec3(.9f, .9f, .9f));
 Estructura ParedYZ(.0f, 0.0f, .0f, 1.0f, 12.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
+
+//Declaramos un techo total
+Estructura TechoTotal(0, 0, 0, 100.0f, 1.0f, 100.0f, 0, glm::vec3(.9f, .9f, .9f));
+Estructura Techo(0, 0, 0, 33.3f, 1.0f, 33.3f, 0, glm::vec3(.9f, .9f, .9f));
 
 ////TRIANGULO PARA LA HABITACIÓN INTRO//////
 Estructura TrianguloIntro(0.0f, 0.0f, 0.0f, 7.0f, 7.0f, 7.0f, 0, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -170,22 +178,64 @@ Estructura CuboCamara(0, 0, 0, 2.0, 2.0, 2.0, 0, glm::vec3(1.0, 1.0, 1.0));
 Estructura  EsferaIluminacion(0, 0, 0, 1, 1, 1, 0, glm::vec3(.7f, 0.7f, 0.7f));
 Estructura CuboIluminacion(0, 0, 0, .75f, 1.50f, .75f, 0, glm::vec3(.2f, .2f, .2f));
 
-/////ESFERA PARA LA HABITACIÓN DE LAS TEXTURAS//////
-Estructura  EsferaTexturas(0, 0, 0, 10, 8, 10, 0, glm::vec3(.7f, 0.7f, 0.7f));
+/////HABITACIÓN DE LAS TEXTURAS//////
+//La habitación de las texturas estará vacía, dado que las texturas serán aplicadas en todos las paredes y suelos
+
+//Función encargada de cargar la textura
+int myCargaTexturas(const char* nombre) {
+	GLuint textura;
+
+	//Cargamos la textura y la asignamos a un ID
+	glGenTextures(1, &textura);
+	glBindTexture(GL_TEXTURE_2D, textura);
+
+	//Configuramos los parámetros de la textura
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//Configuramos los parámetros de la textura
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//Cargamos la imagen y la asignamos a la textura
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(nombre, &width, &height, &nrChannels, 0);
+
+	//Comprobamos si la imagen se ha cargado correctamente
+	if (data) {
+		//Cargamos la textura en la GPU
+		if (nrChannels == 3) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
+		//Comprobamos si la imagen tiene un canal alfa
+		else if (nrChannels == 4) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+
+	//Comprobamos si la textura se ha cargado correctamente
+	stbi_image_free(data);
+	stbi_set_flip_vertically_on_load(1);
+
+	return textura;
+}
 
 //Función para preparar el VAO del cuadrado en el plano XZ
 void CuadradoXZ(unsigned int* VAOSuelo) {
 	unsigned int VBO;
 
 	float vertices[] = {
-		//     Posición         Color
-		-.5, 0.0f,  .5f,     0.0, 1.0, 0.0,
-		 .5, 0.0f,  .5f,     0.0, 1.0, 0.0,
-		 .5, 0.0f, -.5f,     0.0, 1.0, 0.0,
+		//    Posición         Color           Normal                TexCoords
+		-0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    0.0f, 0.0f,
+		 0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    1.0f, 0.0f,
+		 0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    1.0f, 1.0f,
 
-		-.5, 0.0f,  .5f,     0.0, 1.0, 0.0,
-		 .5, 0.0f, -.5f,     0.0, 1.0, 0.0,
-		-.5, 0.0f, -.5f,     0.0, 1.0, 0.0
+		-0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    0.0f, 0.0f,
+		 0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    1.0f, 1.0f,
+		-0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,    0.0f, 1.0f
 	};
 
 	glGenVertexArrays(1, VAOSuelo);
@@ -196,30 +246,81 @@ void CuadradoXZ(unsigned int* VAOSuelo) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Posición
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// Color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// Normal
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Coordenadas de textura
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
+
+//Función para preparar el VAO del cuadrado en el plano XZ
+void CuadradoXZTecho(unsigned int* VAOSuelo) {
+	unsigned int VBO;
+
+	float vertices[] = {
+		//    Posición         Color           Normal                TexCoords
+		-0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    0.0f, 0.0f,
+		-0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    0.0f, 1.0f,
+		 0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    1.0f, 1.0f,
+
+		-0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    0.0f, 0.0f,
+		 0.5f, 0.0f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    1.0f, 1.0f,
+		 0.5f, 0.0f,  0.5f,    0.0f, 1.0f, 0.0f,   0.0f, -1.0f, 0.0f,    1.0f, 0.0f
+	};
+
+	glGenVertexArrays(1, VAOSuelo);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(*VAOSuelo);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Posición
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// Normal
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Coordenadas de textura
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
 
 // Función para preparar el VAO de un cuadrado en el plano XY (ideal para paredes)
 void CuadradoXY(unsigned int* VAOPared) {
 	unsigned int VBO;
 
 	float vertices[] = {
-		//     Posición         Color
-		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
-		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+		//    Posición             Color             Normal                TexCoords
+		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     1.0f, 1.0f,
 
-		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
-		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f
+		-0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     1.0f, 1.0f,
+		-0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,     0.0f, 1.0f
 	};
 
 	glGenVertexArrays(1, VAOPared);
@@ -230,30 +331,39 @@ void CuadradoXY(unsigned int* VAOPared) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Posición
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// Color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// Normal
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Coordenadas de textura
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
+
 
 // Función para preparar el VAO de un cuadrado en el plano YZ (ideal para paredes)
 void CuadradoYZ(unsigned int* VAOPared) {
 	unsigned int VBO;
 
 	float vertices[] = {
-		//     Posición             Color
-		 0.0f, -0.5f, -0.5f,       0.0f, 1.0f, 0.0f,
-		 0.0f, -0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
-		 0.0f,  0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
+		//    Posición           Color            Normal              TexCoords
+		 0.0f, -0.5f, -0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
+		 0.0f, -0.5f,  0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   1.0f, 0.0f,
+		 0.0f,  0.5f,  0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
 
-		 0.0f, -0.5f, -0.5f,       0.0f, 1.0f, 0.0f,
-		 0.0f,  0.5f,  0.5f,       0.0f, 1.0f, 0.0f,
-		 0.0f,  0.5f, -0.5f,       0.0f, 1.0f, 0.0f
+		 0.0f, -0.5f, -0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
+		 0.0f,  0.5f,  0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+		 0.0f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,   0.0f, 1.0f
 	};
 
 	glGenVertexArrays(1, VAOPared);
@@ -264,12 +374,20 @@ void CuadradoYZ(unsigned int* VAOPared) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Posición
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// Color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// Normal
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Coordenadas de textura
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -404,15 +522,6 @@ void Cubo(unsigned int* VAO) {
 	// Atributo Color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
-	// Atributo normal
-	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
-	//glEnableVertexAttribArray(2);
-
-
-	// Coordenadas de textura
-	//glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
-	//glEnableVertexAttribArray(3);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -568,7 +677,7 @@ void dibujarSuelo(Estructura& suelo, glm::vec3 posicion, unsigned int transformL
 }
 
 // Función principal para dibujar todos los suelos
-void dibujarSuelos(unsigned int transformLoc, unsigned int colorLoc) {
+void dibujarSuelos(unsigned int transformLoc, unsigned int colorLoc, unsigned int useTexture) {
 	// Definimos los suelos y sus posiciones en un vector de pares
 	struct InfoSuelo {
 		Estructura& suelo;
@@ -587,9 +696,11 @@ void dibujarSuelos(unsigned int transformLoc, unsigned int colorLoc) {
 	};
 
 	// Dibujamos cada suelo con su posición correspondiente
+	glUniform1i(useTexture, true); // Activamos el uso de la textura del VAO
 	for (const auto& info : suelos) {
 		dibujarSuelo(info.suelo, info.posicion, transformLoc, colorLoc);
 	}
+	glUniform1i(useTexture, false); // Desactivamos el uso de la textura del VAO
 }
 
 
@@ -604,7 +715,10 @@ void dibujarPared(glm::vec3 posicion, Estructura& pared, unsigned int transformL
 	pared.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
 }
 
-void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc) {
+void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc, unsigned int useTexture) {
+	//Indicamos que usamos la textura
+	glUniform1i(useTexture, true); // Activamos el uso de la textura del VAO
+
 	// ParedXYTotal (centro)
 	dibujarPared(glm::vec3(0.0f, ParedXYTotal.sy / 2, (SueloIntro.sz / 2) + 33.3f), ParedXYTotal, transformLoc, colorLoc);
 
@@ -640,6 +754,43 @@ void dibujarParedes(unsigned int transformLoc, unsigned int colorLoc) {
 	for (const auto& pos : posicionesYZ) {
 		dibujarPared(pos, ParedYZ, transformLoc, colorLoc);
 	}
+
+	//Desactivamos el uso de la textura
+	glUniform1i(useTexture, false); // Desactivamos el uso de la textura del VAO
+}
+
+void dibujarTecho(Estructura& techo, glm::vec3 posicion, unsigned int transformLoc, unsigned int colorLoc) {
+	glm::mat4 transform = glm::mat4(1.0f);
+	transform = glm::translate(transform, posicion);
+	techo.posicion = transform;
+	transform = glm::scale(transform, glm::vec3(techo.sx, techo.sy, techo.sz));
+	techo.dibujarObjeto(transformLoc, transform, colorLoc, TRIANGULOS, 6);
+}
+
+void dibujarTechos(unsigned int transformLoc, unsigned int colorLoc, unsigned int useTextureLoc) {
+	struct InfoTecho {
+		Estructura& techo;
+		glm::vec3 posicion;
+	};
+
+	// Usamos la misma altura para todos los techos: altura de una pared
+	float alturaTecho = ParedXYTotal.sy;
+
+	std::vector<InfoTecho> techos = {
+		// TechoTotal se coloca encima de SueloPasillo
+		{TechoTotal, glm::vec3(0.0f, alturaTecho, 0.0f)},
+
+		// TechoCamara se coloca encima de SueloCamara (posición = centro del suelo + altura)
+		{Techo, glm::vec3(SueloCamara.px, alturaTecho, -100 + SueloCamara.sz)}
+	};
+
+	glUniform1i(useTextureLoc, true); // Activamos texturas
+
+	for (const auto& info : techos) {
+		dibujarTecho(info.techo, info.posicion, transformLoc, colorLoc);
+	}
+
+	glUniform1i(useTextureLoc, false); // Desactivamos texturas
 }
 
 //Función que dibuja el triángulo de la introducción
@@ -752,17 +903,6 @@ void dibujarCuboIluminacion(unsigned int transformLoc, unsigned int colorLoc, un
 	CuboIluminacion.dibujarObjeto(transformLoc, CuboIluminacion.transform, colorLoc, GL_TRIANGLES, 36);
 }
 
-void dibujarEsferaTexturas(unsigned int transformLoc, unsigned int colorLoc, unsigned int useVertexColorLoc) {
-	//Posición relativa de la esfera respecto al centro del suelo
-	glm::vec3 posicionRelativa(0.0f, 0.0f, 0.0f);
-
-	EsferaTexturas.transform = glm::translate(SueloTexturas.posicion, posicionRelativa);
-	EsferaTexturas.transform = glm::scale(EsferaTexturas.transform, glm::vec3(EsferaTexturas.sx, EsferaTexturas.sy, EsferaTexturas.sz));
-
-	glUniform1i(useVertexColorLoc, false);
-	EsferaTexturas.dibujarObjeto(transformLoc, EsferaTexturas.transform, colorLoc, GL_TRIANGLES, sphereVertexCount);
-}
-
 //Función para el control del programa
 void processInput(GLFWwindow* window) {
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -836,6 +976,7 @@ void Display() {
 	unsigned int useVertexColorLoc = glGetUniformLocation(shaderProgram, "useVertexColor");
 	signed int luzActivaLoc = glGetUniformLocation(shaderProgram, "luzIluminacionActiva");
 	unsigned int luzPosLoc = glGetUniformLocation(shaderProgram, "luzIluminacionPos");
+    unsigned int useTextureLoc = glGetUniformLocation(shaderProgram, "useTexture");
 
 
 	//Limpiamos el buffer de color y el de profundidad
@@ -846,10 +987,13 @@ void Display() {
 	myCamara();
 	
 	//Dibujamos el suelo
-	dibujarSuelos(transformLoc, colorLoc);
+	dibujarSuelos(transformLoc, colorLoc, useTextureLoc);
 
 	//Dibujamos las paredes
-	dibujarParedes(transformLoc, colorLoc);
+	dibujarParedes(transformLoc, colorLoc, useTextureLoc);
+
+	//Dibujamos los techos
+	dibujarTechos(transformLoc, colorLoc, useTextureLoc);
 
 	//Dibujamos el triángulo de la parte INTRO
 	dibujarTrianguloIntro(transformLoc, colorLoc, useVertexColorLoc);
@@ -874,16 +1018,13 @@ void Display() {
 	// Dibuja el cubo de iluminación
 	dibujarCuboIluminacion(transformLoc, colorLoc, useVertexColorLoc);
 
-	// Dibuja la esfera de texturas
-	dibujarEsferaTexturas(transformLoc, colorLoc, useVertexColorLoc);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main() {
 	//Devlaramos las variables
-	unsigned int VAOSuelo, VAOPared, VAOTriangulo, VAOEsfera, VAOCubo, VAOCuboCamara, VAOEsferaLuces, VAOCuboLuces, 
-		VAOEsferaTexturas;
+	unsigned int VAOSuelo, VAOPared, VAOTecho, VAOTriangulo, VAOEsfera, VAOCubo, VAOCuboCamara, VAOEsferaLuces, VAOCuboLuces;
 
 	//Inicializamos GLFW
 	glfwInit();
@@ -922,12 +1063,20 @@ int main() {
 	//Preparamos los VAO's
 	CuadradoXZ(&VAOSuelo);
 	SueloPasillo.VAO = SueloIntro.VAO = SueloModelado.VAO = SueloTransformaciones.VAO = SueloCamara.VAO = SueloIluminacion.VAO = SueloTexturas.VAO = SueloColisiones.VAO = VAOSuelo;
+	SueloPasillo.texture = myCargaTexturas("marmol.jpg");
+	SueloIntro.texture = SueloModelado.texture = SueloTransformaciones.texture = SueloCamara.texture = SueloIluminacion.texture = SueloTexturas.texture = SueloColisiones.texture = myCargaTexturas("marmol.jpg");
+	
+	CuadradoXZTecho(&VAOTecho);
+	TechoTotal.VAO = Techo.VAO = VAOTecho;
+	TechoTotal.texture = Techo.texture = myCargaTexturas("marmol.jpg");
 
 	CuadradoXY(&VAOPared);
 	ParedXY.VAO = ParedXYTotal.VAO = VAOPared;
+	ParedXY.texture = ParedXYTotal.texture = myCargaTexturas("marmol.jpg");
 
 	CuadradoYZ(&VAOPared);
 	ParedYZ.VAO = VAOPared;
+	ParedYZ.texture = myCargaTexturas("marmol.jpg");
 
 	Triangulo(&VAOTriangulo);
 	TrianguloIntro.VAO = VAOTriangulo;
@@ -946,8 +1095,6 @@ int main() {
 	Cubo(&VAOCuboLuces);
 	CuboIluminacion.VAO = VAOCuboLuces;
 
-	Esfera(&VAOEsferaTexturas);
-	EsferaTexturas.VAO = VAOEsferaTexturas;
 	
 
 	//Lazo de la ventana mientras no la cierre

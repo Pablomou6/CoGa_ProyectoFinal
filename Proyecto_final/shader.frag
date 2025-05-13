@@ -2,12 +2,17 @@
 in vec3 vertexColor;
 in vec3 fragNormal;
 in vec3 fragPos;
+in vec2 TexCoord; // Añadido para texturas
 
 out vec4 FragColor;
 
 uniform vec3 ourColor;
 uniform bool useVertexColor;
 uniform bool useLighting;
+
+// Textura
+uniform sampler2D ourTexture;      // Añadido para texturas
+uniform bool useTexture;           // Añadido para activar/desactivar textura
 
 // Luz direccional
 uniform vec3 lightDir;
@@ -19,7 +24,12 @@ uniform vec3 luzIluminacionPos;
 uniform vec3 viewPos;
 
 void main() {
-    vec3 baseColor = useVertexColor ? vertexColor : ourColor;
+    vec3 baseColor;
+    if (useTexture) {
+        baseColor = texture(ourTexture, TexCoord).rgb;
+    } else {
+        baseColor = useVertexColor ? vertexColor : ourColor;
+    }
     vec3 normal = normalize(fragNormal);
     vec3 result = baseColor;
 
@@ -52,4 +62,3 @@ void main() {
 
     FragColor = vec4(result, 1.0);
 }
-
